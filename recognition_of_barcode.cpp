@@ -13,182 +13,239 @@
 
 #include "E:\zbra64\ZBar\include\zbar.h"
 #include <iostream>
+#include <fstream>
 using namespace std;
 using namespace zbar;
 using namespace cv;
 
+//灰度处理
+Mat getGray(Mat image, bool show) 
+{
+	Mat cimage;
+	cvtColor(image, cimage, CV_RGBA2GRAY);
+	if (show)
+		imshow("灰度图", cimage);
+	return cimage;
+}
+
+//高斯滤波处理
+Mat getGass(Mat image, bool show) {
+	Mat cimage;
+	GaussianBlur(image, cimage, Size(3, 3), 0);
+	if (show)
+	imshow("高斯滤波图", cimage);
+	return cimage;
+}
+
+//sobel x-y差处理
+Mat getSobel(Mat image, bool show) 
+{
+	Mat cimageX16s, cimageY16s, imageSobelX, imageSobelY, out;
+	Sobel(image, cimageX16s, CV_16S, 1, 0, 3, 1, 0, 4);
+	Sobel(image, cimageY16s, CV_16S, 0, 1, 3, 1, 0, 4);
+	convertScaleAbs(cimageX16s, imageSobelX, 1, 0);
+	convertScaleAbs(cimageY16s, imageSobelY, 1, 0);
+	out = imageSobelX - imageSobelY;
+	if (show)
+	    imshow("Sobelx-y差 图", out);
+	return out;
+			
+}
+
+//均值滤波处理
+Mat getBlur(Mat image, bool show) 
+{
+	Mat cimage;
+	blur(image, cimage, Size(3, 3));
+	if (show)
+	    imshow("均值滤波图", cimage);
+	return cimage;		
+}
+
+//二值化处理
+Mat getThold(Mat image, bool show) 
+{
+	Mat cimage;
+	threshold(image, cimage, 112, 255, CV_THRESH_BINARY);
+	if (show)
+	imshow("二值化图", cimage);
+	return cimage;
+}
+
+//闭运算处理
+Mat getBys(Mat image, bool show)
+{
+	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
+	morphologyEx(image, image, MORPH_CLOSE, element);
+	if (show)
+	imshow("闭运算图", image);
+	return image;
+}
+
+//腐蚀
+Mat getErode(Mat image, bool show) 
+{
+	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
+	erode(image, image, element);
+	if (show)
+	imshow("腐蚀图", image);
+	return image;
+}
+
+//膨胀
+Mat getDilate(Mat image, bool show) 
+{
+	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
+	for (int i = 0; i < 3; i++)
+	dilate(image, image, element);
+	if (show)
+	imshow("膨胀图", image);
+	return image;
+}
+
+//获取ROI
+Mat getRect(Mat image, Mat simage, bool show) 
+{
+	vector<vector<Point>> contours;
+	vector<Vec4i> hiera;
+	//Mat cimage;
+	findContours(image, contours, hiera, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
+	vector<float>contourArea;
+	for (int i = 0; i < contours.size(); i++)
+	{
+	    contourArea.push_back(cv::contourArea(contours[i]));
+	}
+	 //找出面积最大的轮廓
+	double maxValue; Point maxLoc;
+	minMaxLoc(contourArea, NULL, &maxValue, NULL, &maxLoc);
+	//计算面积最大的轮廓的最小的外包矩形
+	 RotatedRect minRect = minAreaRect(contours[maxLoc.x]);
+	//为了防止找错,要检查这个矩形的偏斜角度不能超标
+	//如果超标,那就是没找到
+	 Rect myRect;
+	if (minRect.angle<2.0)
+	{
+	    //找到了矩形的角度,但是这是一个旋转矩形,所以还要重新获得一个外包最小矩形
+	        myRect = boundingRect(contours[maxLoc.x]);
+	    //把这个矩形在源图像中画出来
+	        rectangle(image,myRect,Scalar(0,255,255),3,LINE_AA);
+	        //看看显示效果,找的对不对
+	        //imshow("rect", image);
+	        //将扫描的图像裁剪下来,并保存为相应的结果,保留一些X方向的边界,所以对rect进行一定的扩张
+	        myRect.x = myRect.x - (myRect.width / 20);
+	    myRect.width = myRect.width*1.1;
+	    Mat resultImage = Mat(image, myRect);
+		//imshow("rect_result", resultImage);
+	 }
+	
+	 for (int i = 0; i<contours.size(); i++)
+	 {
+	     Rect rect = boundingRect((Mat)contours[i]);
+	     //cimage = simage(rect);
+	         rectangle(simage, rect, Scalar(0), 2);
+		if (show)
+				 ;
+	         //imshow("转变图", simage);
+	 }
+
+	 //裁剪转变图
+	 myRect.x = myRect.x - (myRect.width / 20);
+	 myRect.width = myRect.width*1.1;
+	 simage = Mat(simage, myRect);
+	 imshow("result", simage);
+
+	 return simage;
+}
+
+void Dis_code(Mat image) 
+{
+	 ImageScanner scanner;
+	 scanner.set_config(ZBAR_NONE, ZBAR_CFG_ENABLE, 1);
+
+	 Mat imageGray;
+	 cvtColor(image, imageGray, CV_RGB2GRAY);
+
+	 int width = imageGray.cols;
+	 int height = imageGray.rows;
+	 uchar *raw = (uchar *)imageGray.data;//raw中存放的是图像的地址
+	 Image imageZbar(width, height, "Y800", raw, width * height);
+
+	 //扫描条码  
+	 scanner.scan(imageZbar); 
+
+	 //2个码
+	 CString str_barcode_chip;//CHIP ID码
+	 CString str_barcode_sn;//SN码
+
+	 Image::SymbolIterator symbol = imageZbar.symbol_begin();
+	 if (imageZbar.symbol_begin() == imageZbar.symbol_end())
+	 {
+	 	MessageBox(NULL, TEXT("识别失败"), TEXT("条码结果"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
+	 	return ;
+	 }
+	 else
+	 {
+	 	str_barcode_chip = symbol->get_data().c_str();
+
+	 	++symbol;
+
+	 	str_barcode_sn = symbol->get_data().c_str();
+	 }
+
+	 MessageBox(NULL, TEXT("SN:") + str_barcode_sn + TEXT("\nCHIP ID:") + str_barcode_chip, TEXT("条码结果"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
+
+
+	 //得到的CHIP ID码和SN码保存到csv文件中
+	 // 写文件  
+	 ofstream outFile;
+	 outFile.open("F:\\条码保存\\data.csv", ios::out); // 打开模式可省略 
+	 outFile << str_barcode_chip << ',' << 21 << ',' << str_barcode_sn << endl;
+	 outFile.close();
+
+	 // 读文件  
+	 ifstream inFile("F:\\条码保存\\data.csv", ios::in);
+
+	 //while (getline(inFile, lineStr))
+	 //{
+
+		// vector<string> lineArray;
+		// // 按照逗号分隔  
+		// while (getline(ss, str, ','))
+		//	 lineArray.push_back(str);
+		// strArray.push_back(lineArray);
+	 //}
+
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR    lpCmdLine, _In_ int       nCmdShow)
 {
-	VideoCapture capture;
+	VideoCapture capture(1);
 	Mat camera;
 
-	capture.open(1, CAP_DSHOW);	//打开摄像头设备采集条码图片
 	if (!capture.isOpened())
 	{
 		return -1;
 	}
 	//读取一帧图像
 	capture.read(camera);
+	imshow("sss", camera);
+	//Mat srcimage = imread("F:\\3d.jpg");
+	//imshow("原图", srcimage);
+	//Mat image;
+	//image = getGray(srcimage, true);//获取灰度图
+	//image = getGass(image, true);//高斯平滑滤波
+	//image = getSobel(image, true);//Sobel x—y梯度差
+	//image = getBlur(image, true);//均值滤波除高频噪声
+	//image = getThold(image, true);//二值化
+	//image = getBys(image, true);//闭运算
+	//image = getErode(image, true);//腐蚀
+	//image = getDilate(image, true);//膨胀
 
-	ImageScanner scanner;
-	scanner.set_config(ZBAR_NONE, ZBAR_CFG_ENABLE, 1);
-	//Mat image = imread("F:\\E6.jpg");//识别本地图片条码
-	namedWindow("tiaoma");
-	//imshow("tiaoma",image);
-	imshow("tiaoma", camera);
-
-	Mat imageGray;
-	cvtColor(camera, imageGray, CV_RGB2GRAY);
-	int width = imageGray.cols;
-	int height = imageGray.rows;
-	uchar *raw = (uchar *)imageGray.data;//raw中存放的是图像的地址
-	Image imageZbar(width, height, "Y800", raw, width * height);
-
-	//扫描条码  
-	scanner.scan(imageZbar); 
-
-	//2个码
-	CString str_barcode_chip;//CHIP ID码
-	CString str_barcode_sn;//SN码
-
-	Image::SymbolIterator symbol = imageZbar.symbol_begin();
-	if (imageZbar.symbol_begin() == imageZbar.symbol_end())
-	{
-		MessageBox(NULL, TEXT("识别失败"), TEXT("条码结果"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
-		return -1;
-	}
-	else
-	{
-		str_barcode_chip = symbol->get_data().c_str();
-
-		++symbol;
-
-		str_barcode_sn = symbol->get_data().c_str();
-	}
-
-	MessageBox(NULL, TEXT("SN:") + str_barcode_sn + TEXT("\nCHIP ID:") + str_barcode_chip, TEXT("条码结果"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
+	//image = getRect(image, srcimage, true);//获取ROI
+	//imshow("处理结果图", image);
+	Dis_code(camera);
 
 	waitKey();
-	imageZbar.set_data(NULL, 0);
-	return 0;
 
-
-	//Mat srcImage = imread("F:\\机顶盒1.jpg");
-	//if (srcImage.empty())
-	//{
-	//	cout << "image file read error" << endl;
-
-	//	return -1;
-	//}
-	////图像转换为灰度图像
-	//Mat grayImage;
-	//if (srcImage.channels() == 3)
-	//{
-	//	cvtColor(srcImage, grayImage, CV_RGB2GRAY);
-	//}
-	//else
-	//{
-	//	grayImage = srcImage.clone();
-	//}
-	////建立图像的梯度幅值
-	//Mat gradientXImage;
-	//Mat gradientYImage;
-	//Mat gradientImage;
-	//Scharr(grayImage, gradientXImage, CV_32F, 1, 0);
-	//Scharr(grayImage, gradientYImage, CV_32F, 0, 1);
-	////因为我们需要的条形码在需要X方向水平,所以更多的关注X方向的梯度幅值,而省略掉Y方向的梯度幅值
-	//subtract(gradientXImage, gradientYImage, gradientImage);
-	////归一化为八位图像
-	//convertScaleAbs(gradientImage, gradientImage);
-	////看看得到的梯度图像是什么样子
-	////imshow(windowNameString,gradientImage);
-	////对图片进行相应的模糊化,使一些噪点消除
-	//Mat blurImage;
-	//blur(gradientImage, blurImage, Size(9, 9));
-	////模糊化以后进行阈值化,得到到对应的黑白二值化图像,二值化的阈值可以根据实际情况调整
-	//Mat thresholdImage;
-	//threshold(blurImage, thresholdImage, 210, 255, THRESH_BINARY);
-	////看看二值化图像
-	////imshow(windowNameString,thresholdImage);
-	////二值化以后的图像,条形码之间的黑白没有连接起来,就要进行形态学运算,消除缝隙,相当于小型的黑洞,选择闭运算
-	////因为是长条之间的缝隙,所以需要选择宽度大于长度
-	//Mat kernel = getStructuringElement(MORPH_RECT, Size(21, 7));
-	//Mat morphImage;
-	//morphologyEx(thresholdImage, morphImage, MORPH_CLOSE, kernel);
-	////看看形态学操作以后的图像
-	////imshow(windowNameString,morphImage);
-	////现在要让条形码区域连接在一起,所以选择膨胀腐蚀,而且为了保持图形大小基本不变,应该使用相同次数的膨胀腐蚀
-	////先腐蚀,让其他区域的亮的地方变少最好是消除,然后膨胀回来,消除干扰,迭代次数根据实际情况选择
-	//erode(morphImage, morphImage, getStructuringElement(MORPH_RECT, Size(3, 3)), Point(-1, -1), 4);
-	//dilate(morphImage, morphImage, getStructuringElement(MORPH_RECT, Size(3, 3)), Point(-1, -1), 4);
-	////看看形态学操作以后的图像
-	////imshow(windowNameString,morphImage);
-	//vector<vector<Point2i>>contours;
-	//vector<float>contourArea;
-	////接下来对目标轮廓进行查找,目标是为了计算图像面积
-	//findContours(morphImage, contours, RETR_EXTERNAL, CHAIN_APPROX_SIMPLE);
-	//namedWindow("aaa");
-	//imshow("aaa", morphImage);
-	////计算轮廓的面积并且存放
-	//for (int i = 0; i < contours.size(); i++)
-	//{
-	//	contourArea.push_back(cv::contourArea(contours[i]));
-	//}
-	////找出面积最大的轮廓
-	//double maxValue; Point maxLoc;
-	//minMaxLoc(contourArea, NULL, &maxValue, NULL, &maxLoc);
-	////计算面积最大的轮廓的最小的外包矩形
-	//RotatedRect minRect = minAreaRect(contours[maxLoc.x]);
-	////为了防止找错,要检查这个矩形的偏斜角度不能超标
-	////如果超标,那就是没找到
-	//Mat resultImage;
-	//if (minRect.angle<2.0)
-	//{
-	//	//找到了矩形的角度,但是这是一个旋转矩形,所以还要重新获得一个外包最小矩形
-	//	Rect myRect = boundingRect(contours[maxLoc.x]);
-	//	//把这个矩形在源图像中画出来
-	//	//rectangle(srcImage,myRect,Scalar(0,255,255),3,LINE_AA);
-	//	//看看显示效果,找的对不对
-	//	//imshow(windowNameString,srcImage);
-	//	//将扫描的图像裁剪下来,并保存为相应的结果,保留一些X方向的边界,所以对rect进行一定的扩张
-	//	myRect.x = myRect.x - (myRect.width / 20);
-	//	myRect.width = myRect.width*1.1;
-	//	resultImage = Mat(srcImage, myRect);
-	//}
-	//namedWindow("sss");
-	//imshow("sss", resultImage);
-
-
-	//int width = resultImage.cols;
-	//int height = resultImage.rows;
-	//uchar *raw = (uchar *)resultImage.data;//raw中存放的是图像的地址
-	//Image imageZbar(width, height, "Y800", raw, width * height);
-
-	//ImageScanner scanner;
-	//scanner.set_config(ZBAR_NONE, ZBAR_CFG_ENABLE, 1);
-	////扫描条码  
-	//scanner.scan(imageZbar); 
-
-	////2个码
-	//CString str_barcode_chip;//CHIP ID码
-	//CString str_barcode_sn;//SN码
-
-	//Image::SymbolIterator symbol = imageZbar.symbol_begin();
-	//if (imageZbar.symbol_begin() == imageZbar.symbol_end())
-	//{
-	//	MessageBox(NULL, TEXT("识别失败"), TEXT("条码结果"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
-	//	return -1;
-	//}
-	//else
-	//{
-	//	str_barcode_chip = symbol->get_data().c_str();
-
-	//	++symbol;
-
-	//	str_barcode_sn = symbol->get_data().c_str();
-	//}
-
-	//MessageBox(NULL, TEXT("SN:") + str_barcode_sn + TEXT("\nCHIP ID:") + str_barcode_chip, TEXT("条码结果"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
-
+	return -1;
 }
