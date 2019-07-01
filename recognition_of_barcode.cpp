@@ -18,26 +18,26 @@ using namespace std;
 using namespace zbar;
 using namespace cv;
 
-//»Ò¶È´¦Àí
+//ç°åº¦å¤„ç†
 Mat getGray(Mat image, bool show) 
 {
 	Mat cimage;
 	cvtColor(image, cimage, CV_RGBA2GRAY);
 	if (show)
-		imshow("»Ò¶ÈÍ¼", cimage);
+		imshow("ç°åº¦å›¾", cimage);
 	return cimage;
 }
 
-//¸ßË¹ÂË²¨´¦Àí
+//é«˜æ–¯æ»¤æ³¢å¤„ç†
 Mat getGass(Mat image, bool show) {
 	Mat cimage;
 	GaussianBlur(image, cimage, Size(3, 3), 0);
 	if (show)
-	imshow("¸ßË¹ÂË²¨Í¼", cimage);
+	imshow("é«˜æ–¯æ»¤æ³¢å›¾", cimage);
 	return cimage;
 }
 
-//sobel x-y²î´¦Àí
+//sobel x-yå·®å¤„ç†
 Mat getSobel(Mat image, bool show) 
 {
 	Mat cimageX16s, cimageY16s, imageSobelX, imageSobelY, out;
@@ -47,63 +47,63 @@ Mat getSobel(Mat image, bool show)
 	convertScaleAbs(cimageY16s, imageSobelY, 1, 0);
 	out = imageSobelX - imageSobelY;
 	if (show)
-	    imshow("Sobelx-y²î Í¼", out);
+	    imshow("Sobelx-yå·® å›¾", out);
 	return out;
 			
 }
 
-//¾ùÖµÂË²¨´¦Àí
+//å‡å€¼æ»¤æ³¢å¤„ç†
 Mat getBlur(Mat image, bool show) 
 {
 	Mat cimage;
 	blur(image, cimage, Size(3, 3));
 	if (show)
-	    imshow("¾ùÖµÂË²¨Í¼", cimage);
+	    imshow("å‡å€¼æ»¤æ³¢å›¾", cimage);
 	return cimage;		
 }
 
-//¶şÖµ»¯´¦Àí
+//äºŒå€¼åŒ–å¤„ç†
 Mat getThold(Mat image, bool show) 
 {
 	Mat cimage;
 	threshold(image, cimage, 112, 255, CV_THRESH_BINARY);
 	if (show)
-	imshow("¶şÖµ»¯Í¼", cimage);
+	imshow("äºŒå€¼åŒ–å›¾", cimage);
 	return cimage;
 }
 
-//±ÕÔËËã´¦Àí
+//é—­è¿ç®—å¤„ç†
 Mat getBys(Mat image, bool show)
 {
 	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
 	morphologyEx(image, image, MORPH_CLOSE, element);
 	if (show)
-	imshow("±ÕÔËËãÍ¼", image);
+	imshow("é—­è¿ç®—å›¾", image);
 	return image;
 }
 
-//¸¯Ê´
+//è…èš€
 Mat getErode(Mat image, bool show) 
 {
 	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
 	erode(image, image, element);
 	if (show)
-	imshow("¸¯Ê´Í¼", image);
+	imshow("è…èš€å›¾", image);
 	return image;
 }
 
-//ÅòÕÍ
+//è†¨èƒ€
 Mat getDilate(Mat image, bool show) 
 {
 	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
 	for (int i = 0; i < 3; i++)
 	dilate(image, image, element);
 	if (show)
-	imshow("ÅòÕÍÍ¼", image);
+	imshow("è†¨èƒ€å›¾", image);
 	return image;
 }
 
-//»ñÈ¡ROI
+//è·å–ROI
 Mat getRect(Mat image, Mat simage, bool show) 
 {
 	vector<vector<Point>> contours;
@@ -115,23 +115,23 @@ Mat getRect(Mat image, Mat simage, bool show)
 	{
 	    contourArea.push_back(cv::contourArea(contours[i]));
 	}
-	 //ÕÒ³öÃæ»ı×î´óµÄÂÖÀª
+	 //æ‰¾å‡ºé¢ç§¯æœ€å¤§çš„è½®å»“
 	double maxValue; Point maxLoc;
 	minMaxLoc(contourArea, NULL, &maxValue, NULL, &maxLoc);
-	//¼ÆËãÃæ»ı×î´óµÄÂÖÀªµÄ×îĞ¡µÄÍâ°ü¾ØĞÎ
+	//è®¡ç®—é¢ç§¯æœ€å¤§çš„è½®å»“çš„æœ€å°çš„å¤–åŒ…çŸ©å½¢
 	 RotatedRect minRect = minAreaRect(contours[maxLoc.x]);
-	//ÎªÁË·ÀÖ¹ÕÒ´í,Òª¼ì²éÕâ¸ö¾ØĞÎµÄÆ«Ğ±½Ç¶È²»ÄÜ³¬±ê
-	//Èç¹û³¬±ê,ÄÇ¾ÍÊÇÃ»ÕÒµ½
+	//ä¸ºäº†é˜²æ­¢æ‰¾é”™,è¦æ£€æŸ¥è¿™ä¸ªçŸ©å½¢çš„åæ–œè§’åº¦ä¸èƒ½è¶…æ ‡
+	//å¦‚æœè¶…æ ‡,é‚£å°±æ˜¯æ²¡æ‰¾åˆ°
 	 Rect myRect;
 	if (minRect.angle<2.0)
 	{
-	    //ÕÒµ½ÁË¾ØĞÎµÄ½Ç¶È,µ«ÊÇÕâÊÇÒ»¸öĞı×ª¾ØĞÎ,ËùÒÔ»¹ÒªÖØĞÂ»ñµÃÒ»¸öÍâ°ü×îĞ¡¾ØĞÎ
+	    //æ‰¾åˆ°äº†çŸ©å½¢çš„è§’åº¦,ä½†æ˜¯è¿™æ˜¯ä¸€ä¸ªæ—‹è½¬çŸ©å½¢,æ‰€ä»¥è¿˜è¦é‡æ–°è·å¾—ä¸€ä¸ªå¤–åŒ…æœ€å°çŸ©å½¢
 	        myRect = boundingRect(contours[maxLoc.x]);
-	    //°ÑÕâ¸ö¾ØĞÎÔÚÔ´Í¼ÏñÖĞ»­³öÀ´
+	    //æŠŠè¿™ä¸ªçŸ©å½¢åœ¨æºå›¾åƒä¸­ç”»å‡ºæ¥
 	        rectangle(image,myRect,Scalar(0,255,255),3,LINE_AA);
-	        //¿´¿´ÏÔÊ¾Ğ§¹û,ÕÒµÄ¶Ô²»¶Ô
+	        //çœ‹çœ‹æ˜¾ç¤ºæ•ˆæœ,æ‰¾çš„å¯¹ä¸å¯¹
 	        //imshow("rect", image);
-	        //½«É¨ÃèµÄÍ¼Ïñ²Ã¼ôÏÂÀ´,²¢±£´æÎªÏàÓ¦µÄ½á¹û,±£ÁôÒ»Ğ©X·½ÏòµÄ±ß½ç,ËùÒÔ¶Ôrect½øĞĞÒ»¶¨µÄÀ©ÕÅ
+	        //å°†æ‰«æçš„å›¾åƒè£å‰ªä¸‹æ¥,å¹¶ä¿å­˜ä¸ºç›¸åº”çš„ç»“æœ,ä¿ç•™ä¸€äº›Xæ–¹å‘çš„è¾¹ç•Œ,æ‰€ä»¥å¯¹rectè¿›è¡Œä¸€å®šçš„æ‰©å¼ 
 	        myRect.x = myRect.x - (myRect.width / 20);
 	    myRect.width = myRect.width*1.1;
 	    Mat resultImage = Mat(image, myRect);
@@ -145,10 +145,10 @@ Mat getRect(Mat image, Mat simage, bool show)
 	         rectangle(simage, rect, Scalar(0), 2);
 		if (show)
 				 ;
-	         //imshow("×ª±äÍ¼", simage);
+	         //imshow("è½¬å˜å›¾", simage);
 	 }
 
-	 //²Ã¼ô×ª±äÍ¼
+	 //è£å‰ªè½¬å˜å›¾
 	 myRect.x = myRect.x - (myRect.width / 20);
 	 myRect.width = myRect.width*1.1;
 	 simage = Mat(simage, myRect);
@@ -167,20 +167,20 @@ void Dis_code(Mat image)
 
 	 int width = imageGray.cols;
 	 int height = imageGray.rows;
-	 uchar *raw = (uchar *)imageGray.data;//rawÖĞ´æ·ÅµÄÊÇÍ¼ÏñµÄµØÖ·
+	 uchar *raw = (uchar *)imageGray.data;//rawä¸­å­˜æ”¾çš„æ˜¯å›¾åƒçš„åœ°å€
 	 Image imageZbar(width, height, "Y800", raw, width * height);
 
-	 //É¨ÃèÌõÂë  
+	 //æ‰«ææ¡ç   
 	 scanner.scan(imageZbar); 
 
-	 //2¸öÂë
-	 CString str_barcode_chip;//CHIP IDÂë
-	 CString str_barcode_sn;//SNÂë
+	 //2ä¸ªç 
+	 CString str_barcode_chip;//CHIP IDç 
+	 CString str_barcode_sn;//SNç 
 
 	 Image::SymbolIterator symbol = imageZbar.symbol_begin();
 	 if (imageZbar.symbol_begin() == imageZbar.symbol_end())
 	 {
-	 	MessageBox(NULL, TEXT("Ê¶±ğÊ§°Ü"), TEXT("ÌõÂë½á¹û"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
+	 	MessageBox(NULL, TEXT("è¯†åˆ«å¤±è´¥"), TEXT("æ¡ç ç»“æœ"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
 	 	return ;
 	 }
 	 else
@@ -192,24 +192,24 @@ void Dis_code(Mat image)
 	 	str_barcode_sn = symbol->get_data().c_str();
 	 }
 
-	 MessageBox(NULL, TEXT("SN:") + str_barcode_sn + TEXT("\nCHIP ID:") + str_barcode_chip, TEXT("ÌõÂë½á¹û"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
+	 MessageBox(NULL, TEXT("SN:") + str_barcode_sn + TEXT("\nCHIP ID:") + str_barcode_chip, TEXT("æ¡ç ç»“æœ"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
 
 
-	 //µÃµ½µÄCHIP IDÂëºÍSNÂë±£´æµ½csvÎÄ¼şÖĞ
-	 // Ğ´ÎÄ¼ş  
+	 //å¾—åˆ°çš„CHIP IDç å’ŒSNç ä¿å­˜åˆ°csvæ–‡ä»¶ä¸­
+	 // å†™æ–‡ä»¶  
 	 ofstream outFile;
-	 outFile.open("F:\\ÌõÂë±£´æ\\data.csv", ios::out); // ´ò¿ªÄ£Ê½¿ÉÊ¡ÂÔ 
+	 outFile.open("F:\\æ¡ç ä¿å­˜\\data.csv", ios::out); // æ‰“å¼€æ¨¡å¼å¯çœç•¥ 
 	 outFile << str_barcode_chip << ',' << 21 << ',' << str_barcode_sn << endl;
 	 outFile.close();
 
-	 // ¶ÁÎÄ¼ş  
-	 ifstream inFile("F:\\ÌõÂë±£´æ\\data.csv", ios::in);
+	 // è¯»æ–‡ä»¶  
+	 ifstream inFile("F:\\æ¡ç ä¿å­˜\\data.csv", ios::in);
 
 	 //while (getline(inFile, lineStr))
 	 //{
 
 		// vector<string> lineArray;
-		// // °´ÕÕ¶ººÅ·Ö¸ô  
+		// // æŒ‰ç…§é€—å·åˆ†éš”  
 		// while (getline(ss, str, ','))
 		//	 lineArray.push_back(str);
 		// strArray.push_back(lineArray);
@@ -226,23 +226,29 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance
 	{
 		return -1;
 	}
-	//¶ÁÈ¡Ò»Ö¡Í¼Ïñ
+	//è¯»å–ä¸€å¸§å›¾åƒ
 	capture.read(camera);
 	imshow("sss", camera);
+	
+	string time = get_time();
+	char image_loca[100];
+	sprintf_s(image_loca, "%s%s%s", "F:\\æµ‹è¯•æ¡ç ç”¨\\", time.c_str(), ".jpg");
+	imwrite(image_loca, camera);
+	
 	//Mat srcimage = imread("F:\\3d.jpg");
-	//imshow("Ô­Í¼", srcimage);
+	//imshow("åŸå›¾", srcimage);
 	//Mat image;
-	//image = getGray(srcimage, true);//»ñÈ¡»Ò¶ÈÍ¼
-	//image = getGass(image, true);//¸ßË¹Æ½»¬ÂË²¨
-	//image = getSobel(image, true);//Sobel x¡ªyÌİ¶È²î
-	//image = getBlur(image, true);//¾ùÖµÂË²¨³ı¸ßÆµÔëÉù
-	//image = getThold(image, true);//¶şÖµ»¯
-	//image = getBys(image, true);//±ÕÔËËã
-	//image = getErode(image, true);//¸¯Ê´
-	//image = getDilate(image, true);//ÅòÕÍ
+	//image = getGray(srcimage, true);//è·å–ç°åº¦å›¾
+	//image = getGass(image, true);//é«˜æ–¯å¹³æ»‘æ»¤æ³¢
+	//image = getSobel(image, true);//Sobel xâ€”yæ¢¯åº¦å·®
+	//image = getBlur(image, true);//å‡å€¼æ»¤æ³¢é™¤é«˜é¢‘å™ªå£°
+	//image = getThold(image, true);//äºŒå€¼åŒ–
+	//image = getBys(image, true);//é—­è¿ç®—
+	//image = getErode(image, true);//è…èš€
+	//image = getDilate(image, true);//è†¨èƒ€
 
-	//image = getRect(image, srcimage, true);//»ñÈ¡ROI
-	//imshow("´¦Àí½á¹ûÍ¼", image);
+	//image = getRect(image, srcimage, true);//è·å–ROI
+	//imshow("å¤„ç†ç»“æœå›¾", image);
 	Dis_code(camera);
 
 	waitKey();
