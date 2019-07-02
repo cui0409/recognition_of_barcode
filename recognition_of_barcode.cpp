@@ -14,30 +14,50 @@
 #include "E:\zbra64\ZBar\include\zbar.h"
 #include <iostream>
 #include <fstream>
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <string>
+
 using namespace std;
 using namespace zbar;
 using namespace cv;
 
-//ç°åº¦å¤„ç†
+string get_time()
+{
+	SYSTEMTIME  st, lt;
+	//GetSystemTime(&lt);
+	GetLocalTime(&lt);
+
+	char szResult[30] = "\0";
+
+	sprintf_s(szResult, 30, "%d-%d-%d-%d-%d-%d-%d", lt.wYear, lt.wMonth, lt.wDay, lt.wHour, lt.wMinute, lt.wSecond, lt.wMilliseconds);
+
+	return szResult;
+}
+
+
+//»Ò¶È´¦Àí
 Mat getGray(Mat image, bool show) 
 {
 	Mat cimage;
 	cvtColor(image, cimage, CV_RGBA2GRAY);
 	if (show)
-		imshow("ç°åº¦å›¾", cimage);
+		imshow("»Ò¶ÈÍ¼", cimage);
 	return cimage;
 }
 
-//é«˜æ–¯æ»¤æ³¢å¤„ç†
+//¸ßË¹ÂË²¨´¦Àí
 Mat getGass(Mat image, bool show) {
 	Mat cimage;
 	GaussianBlur(image, cimage, Size(3, 3), 0);
 	if (show)
-	imshow("é«˜æ–¯æ»¤æ³¢å›¾", cimage);
+	imshow("¸ßË¹ÂË²¨Í¼", cimage);
 	return cimage;
 }
 
-//sobel x-yå·®å¤„ç†
+//sobel x-y²î´¦Àí
 Mat getSobel(Mat image, bool show) 
 {
 	Mat cimageX16s, cimageY16s, imageSobelX, imageSobelY, out;
@@ -47,63 +67,63 @@ Mat getSobel(Mat image, bool show)
 	convertScaleAbs(cimageY16s, imageSobelY, 1, 0);
 	out = imageSobelX - imageSobelY;
 	if (show)
-	    imshow("Sobelx-yå·® å›¾", out);
+	    imshow("Sobelx-y²î Í¼", out);
 	return out;
 			
 }
 
-//å‡å€¼æ»¤æ³¢å¤„ç†
+//¾ùÖµÂË²¨´¦Àí
 Mat getBlur(Mat image, bool show) 
 {
 	Mat cimage;
 	blur(image, cimage, Size(3, 3));
 	if (show)
-	    imshow("å‡å€¼æ»¤æ³¢å›¾", cimage);
+	    imshow("¾ùÖµÂË²¨Í¼", cimage);
 	return cimage;		
 }
 
-//äºŒå€¼åŒ–å¤„ç†
+//¶şÖµ»¯´¦Àí
 Mat getThold(Mat image, bool show) 
 {
 	Mat cimage;
 	threshold(image, cimage, 112, 255, CV_THRESH_BINARY);
 	if (show)
-	imshow("äºŒå€¼åŒ–å›¾", cimage);
+	imshow("¶şÖµ»¯Í¼", cimage);
 	return cimage;
 }
 
-//é—­è¿ç®—å¤„ç†
+//±ÕÔËËã´¦Àí
 Mat getBys(Mat image, bool show)
 {
 	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
 	morphologyEx(image, image, MORPH_CLOSE, element);
 	if (show)
-	imshow("é—­è¿ç®—å›¾", image);
+	imshow("±ÕÔËËãÍ¼", image);
 	return image;
 }
 
-//è…èš€
+//¸¯Ê´
 Mat getErode(Mat image, bool show) 
 {
 	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
 	erode(image, image, element);
 	if (show)
-	imshow("è…èš€å›¾", image);
+	imshow("¸¯Ê´Í¼", image);
 	return image;
 }
 
-//è†¨èƒ€
+//ÅòÕÍ
 Mat getDilate(Mat image, bool show) 
 {
 	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
 	for (int i = 0; i < 3; i++)
 	dilate(image, image, element);
 	if (show)
-	imshow("è†¨èƒ€å›¾", image);
+	imshow("ÅòÕÍÍ¼", image);
 	return image;
 }
 
-//è·å–ROI
+//»ñÈ¡ROI
 Mat getRect(Mat image, Mat simage, bool show) 
 {
 	vector<vector<Point>> contours;
@@ -115,23 +135,23 @@ Mat getRect(Mat image, Mat simage, bool show)
 	{
 	    contourArea.push_back(cv::contourArea(contours[i]));
 	}
-	 //æ‰¾å‡ºé¢ç§¯æœ€å¤§çš„è½®å»“
+	 //ÕÒ³öÃæ»ı×î´óµÄÂÖÀª
 	double maxValue; Point maxLoc;
 	minMaxLoc(contourArea, NULL, &maxValue, NULL, &maxLoc);
-	//è®¡ç®—é¢ç§¯æœ€å¤§çš„è½®å»“çš„æœ€å°çš„å¤–åŒ…çŸ©å½¢
+	//¼ÆËãÃæ»ı×î´óµÄÂÖÀªµÄ×îĞ¡µÄÍâ°ü¾ØĞÎ
 	 RotatedRect minRect = minAreaRect(contours[maxLoc.x]);
-	//ä¸ºäº†é˜²æ­¢æ‰¾é”™,è¦æ£€æŸ¥è¿™ä¸ªçŸ©å½¢çš„åæ–œè§’åº¦ä¸èƒ½è¶…æ ‡
-	//å¦‚æœè¶…æ ‡,é‚£å°±æ˜¯æ²¡æ‰¾åˆ°
+	//ÎªÁË·ÀÖ¹ÕÒ´í,Òª¼ì²éÕâ¸ö¾ØĞÎµÄÆ«Ğ±½Ç¶È²»ÄÜ³¬±ê
+	//Èç¹û³¬±ê,ÄÇ¾ÍÊÇÃ»ÕÒµ½
 	 Rect myRect;
 	if (minRect.angle<2.0)
 	{
-	    //æ‰¾åˆ°äº†çŸ©å½¢çš„è§’åº¦,ä½†æ˜¯è¿™æ˜¯ä¸€ä¸ªæ—‹è½¬çŸ©å½¢,æ‰€ä»¥è¿˜è¦é‡æ–°è·å¾—ä¸€ä¸ªå¤–åŒ…æœ€å°çŸ©å½¢
+	    //ÕÒµ½ÁË¾ØĞÎµÄ½Ç¶È,µ«ÊÇÕâÊÇÒ»¸öĞı×ª¾ØĞÎ,ËùÒÔ»¹ÒªÖØĞÂ»ñµÃÒ»¸öÍâ°ü×îĞ¡¾ØĞÎ
 	        myRect = boundingRect(contours[maxLoc.x]);
-	    //æŠŠè¿™ä¸ªçŸ©å½¢åœ¨æºå›¾åƒä¸­ç”»å‡ºæ¥
+	    //°ÑÕâ¸ö¾ØĞÎÔÚÔ´Í¼ÏñÖĞ»­³öÀ´
 	        rectangle(image,myRect,Scalar(0,255,255),3,LINE_AA);
-	        //çœ‹çœ‹æ˜¾ç¤ºæ•ˆæœ,æ‰¾çš„å¯¹ä¸å¯¹
+	        //¿´¿´ÏÔÊ¾Ğ§¹û,ÕÒµÄ¶Ô²»¶Ô
 	        //imshow("rect", image);
-	        //å°†æ‰«æçš„å›¾åƒè£å‰ªä¸‹æ¥,å¹¶ä¿å­˜ä¸ºç›¸åº”çš„ç»“æœ,ä¿ç•™ä¸€äº›Xæ–¹å‘çš„è¾¹ç•Œ,æ‰€ä»¥å¯¹rectè¿›è¡Œä¸€å®šçš„æ‰©å¼ 
+	        //½«É¨ÃèµÄÍ¼Ïñ²Ã¼ôÏÂÀ´,²¢±£´æÎªÏàÓ¦µÄ½á¹û,±£ÁôÒ»Ğ©X·½ÏòµÄ±ß½ç,ËùÒÔ¶Ôrect½øĞĞÒ»¶¨µÄÀ©ÕÅ
 	        myRect.x = myRect.x - (myRect.width / 20);
 	    myRect.width = myRect.width*1.1;
 	    Mat resultImage = Mat(image, myRect);
@@ -145,10 +165,10 @@ Mat getRect(Mat image, Mat simage, bool show)
 	         rectangle(simage, rect, Scalar(0), 2);
 		if (show)
 				 ;
-	         //imshow("è½¬å˜å›¾", simage);
+	         //imshow("×ª±äÍ¼", simage);
 	 }
 
-	 //è£å‰ªè½¬å˜å›¾
+	 //²Ã¼ô×ª±äÍ¼
 	 myRect.x = myRect.x - (myRect.width / 20);
 	 myRect.width = myRect.width*1.1;
 	 simage = Mat(simage, myRect);
@@ -157,101 +177,278 @@ Mat getRect(Mat image, Mat simage, bool show)
 	 return simage;
 }
 
-void Dis_code(Mat image) 
-{
-	 ImageScanner scanner;
-	 scanner.set_config(ZBAR_NONE, ZBAR_CFG_ENABLE, 1);
-
-	 Mat imageGray;
-	 cvtColor(image, imageGray, CV_RGB2GRAY);
-
-	 int width = imageGray.cols;
-	 int height = imageGray.rows;
-	 uchar *raw = (uchar *)imageGray.data;//rawä¸­å­˜æ”¾çš„æ˜¯å›¾åƒçš„åœ°å€
-	 Image imageZbar(width, height, "Y800", raw, width * height);
-
-	 //æ‰«ææ¡ç   
-	 scanner.scan(imageZbar); 
-
-	 //2ä¸ªç 
-	 CString str_barcode_chip;//CHIP IDç 
-	 CString str_barcode_sn;//SNç 
-
-	 Image::SymbolIterator symbol = imageZbar.symbol_begin();
-	 if (imageZbar.symbol_begin() == imageZbar.symbol_end())
-	 {
-	 	MessageBox(NULL, TEXT("è¯†åˆ«å¤±è´¥"), TEXT("æ¡ç ç»“æœ"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
-	 	return ;
-	 }
-	 else
-	 {
-	 	str_barcode_chip = symbol->get_data().c_str();
-
-	 	++symbol;
-
-	 	str_barcode_sn = symbol->get_data().c_str();
-	 }
-
-	 MessageBox(NULL, TEXT("SN:") + str_barcode_sn + TEXT("\nCHIP ID:") + str_barcode_chip, TEXT("æ¡ç ç»“æœ"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
-
-
-	 //å¾—åˆ°çš„CHIP IDç å’ŒSNç ä¿å­˜åˆ°csvæ–‡ä»¶ä¸­
-	 // å†™æ–‡ä»¶  
-	 ofstream outFile;
-	 outFile.open("F:\\æ¡ç ä¿å­˜\\data.csv", ios::out); // æ‰“å¼€æ¨¡å¼å¯çœç•¥ 
-	 outFile << str_barcode_chip << ',' << 21 << ',' << str_barcode_sn << endl;
-	 outFile.close();
-
-	 // è¯»æ–‡ä»¶  
-	 ifstream inFile("F:\\æ¡ç ä¿å­˜\\data.csv", ios::in);
-
-	 //while (getline(inFile, lineStr))
-	 //{
-
-		// vector<string> lineArray;
-		// // æŒ‰ç…§é€—å·åˆ†éš”  
-		// while (getline(ss, str, ','))
-		//	 lineArray.push_back(str);
-		// strArray.push_back(lineArray);
-	 //}
-
-}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance, _In_opt_ HINSTANCE hPrevInstance, _In_ LPWSTR    lpCmdLine, _In_ int       nCmdShow)
 {
-	VideoCapture capture(1);
-	Mat camera;
+	//VideoCapture capture(1);
+	//Mat camera;
 
-	if (!capture.isOpened())
+	//if (!capture.isOpened())
+	//{
+	//	return -1;
+	//}
+	////¶ÁÈ¡Ò»Ö¡Í¼Ïñ
+
+
+	//double rate = capture.get(CAP_PROP_FPS); // »ñÈ¡ÊÓÆµÖ¡ÂÊ
+	//capture.set(CAP_PROP_POS_FRAMES, rate);//¶ÁÈ¡µÚ Ö¡,µÚÒ»Ãë
+	//capture >> camera;
+	//imshow("sss", camera);
+
+
+
+	//string time = get_time();
+
+	//char img_chenggong[100];
+	//char img_shibai[100];
+
+	//sprintf_s(img_chenggong, "%s%s%s", "F:\\²âÊÔÌõÂëÓÃ\\³É¹¦\\", time.c_str(), ".jpg");
+	//sprintf_s(img_shibai, "%s%s%s", "F:\\²âÊÔÌõÂëÓÃ\\Ê§°Ü\\", time.c_str(), ".jpg");
+
+
+	////Mat srcimage = imread("F:\\3d.jpg");
+	////imshow("Ô­Í¼", srcimage);
+	////Mat image;
+	////image = getGray(srcimage, true);//»ñÈ¡»Ò¶ÈÍ¼
+	////image = getGass(image, true);//¸ßË¹Æ½»¬ÂË²¨
+	////image = getSobel(image, true);//Sobel x¡ªyÌİ¶È²î
+	////image = getBlur(image, true);//¾ùÖµÂË²¨³ı¸ßÆµÔëÉù
+	////image = getThold(image, true);//¶şÖµ»¯
+	////image = getBys(image, true);//±ÕÔËËã
+	////image = getErode(image, true);//¸¯Ê´
+	////image = getDilate(image, true);//ÅòÕÍ
+
+	////image = getRect(image, srcimage, true);//»ñÈ¡ROI
+	////imshow("´¦Àí½á¹ûÍ¼", image);
+
+	//ImageScanner scanner;
+	//scanner.set_config(ZBAR_NONE, ZBAR_CFG_ENABLE, 1);
+
+	//Mat imageGray;
+	//cvtColor(camera, imageGray, CV_RGB2GRAY);
+
+	//int width = imageGray.cols;
+	//int height = imageGray.rows;
+	//uchar *raw = (uchar *)imageGray.data;//rawÖĞ´æ·ÅµÄÊÇÍ¼ÏñµÄµØÖ·
+	//Image imageZbar(width, height, "Y800", raw, width * height);
+
+	////É¨ÃèÌõÂë  
+	//scanner.scan(imageZbar);
+
+	////2¸öÂë
+	//CString str_barcode_chip;//CHIP IDÂë
+	//CString str_barcode_sn;//SNÂë
+
+	//Image::SymbolIterator symbol = imageZbar.symbol_begin();
+	//if (imageZbar.symbol_begin() == imageZbar.symbol_end())
+	//{
+	//	MessageBox(NULL, TEXT("Ê¶±ğÊ§°Ü"), TEXT("ÌõÂë½á¹û"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
+	//	imwrite(img_shibai, camera);
+	//	return -1;
+	//}
+	//else
+	//{
+	//	str_barcode_chip = symbol->get_data().c_str();
+
+	//	++symbol;
+
+	//	str_barcode_sn = symbol->get_data().c_str();
+	//}
+
+	//MessageBox(NULL, TEXT("SN:") + str_barcode_sn + TEXT("\nCHIP ID:") + str_barcode_chip, TEXT("ÌõÂë½á¹û"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
+	//imwrite(img_chenggong, camera);
+
+	////µÃµ½µÄCHIP IDÂëºÍSNÂë±£´æµ½csvÎÄ¼şÖĞ
+	//// Ğ´ÎÄ¼ş  
+	//ofstream outFile;
+	//outFile.open("F:\\ÌõÂë±£´æ\\data.csv", ios::out); // ´ò¿ªÄ£Ê½¿ÉÊ¡ÂÔ 
+	//outFile << str_barcode_chip << ',' << 21 << ',' << str_barcode_sn << endl;
+	//outFile.close();
+
+	//// ¶ÁÎÄ¼ş  
+	//ifstream inFile("F:\\ÌõÂë±£´æ\\data.csv", ios::in);
+
+	//waitKey();
+
+	////Mat pic;
+	////pic = imread("F:\\²âÊÔÌõÂëÓÃ\\2019-6-29-10-14-43-180.jpg");
+	////imshow("sss", pic);
+	////Dis_code(pic);
+	////waitKey();
+
+	//capture.release();
+	//return 0;
+
+
+
+
+
+
+
+
+
+	//VideoCapture capture(1);
+	//Mat camera;
+
+	//if (!capture.isOpened())
+	//{
+	//	return -1;
+	//}
+	////¶ÁÈ¡Ò»Ö¡Í¼Ïñ
+	//double rate = capture.get(CAP_PROP_FPS); // »ñÈ¡ÊÓÆµÖ¡ÂÊ
+	//capture.set(CAP_PROP_POS_FRAMES, rate);//¶ÁÈ¡µÚ Ö¡,µÚÒ»Ãë
+	//capture >> camera;
+	//imshow("sss", camera);
+
+	string time = get_time();
+
+	char img_chenggong[100];
+	char img_shibai[100];
+	sprintf_s(img_chenggong, "%s%s%s", "F:\\²âÊÔÌõÂëÓÃ\\³É¹¦\\", time.c_str(), ".jpg");
+	sprintf_s(img_shibai, "%s%s%s", "F:\\²âÊÔÌõÂëÓÃ\\Ê§°Ü\\", time.c_str(), ".jpg");
+
+	Mat image, imageGray, imageGuussian;
+	Mat imageSobelX, imageSobelY, imageSobelOut;
+	imageGray = imread("F:\\2019-6-29-10-10-12-667.jpg", 0);
+	imageGray.copyTo(image);
+	imshow("Source Image", image);
+	GaussianBlur(imageGray, imageGuussian, Size(3, 3), 0);
+	//Ë®Æ½ºÍ´¹Ö±·½Ïò»Ò¶ÈÍ¼ÏñµÄÌİ¶ÈºÍ,Ê¹ÓÃSobelËã×Ó    
+	Mat imageX16S, imageY16S;
+	Sobel(imageGuussian, imageX16S, CV_16S, 1, 0, 3, 1, 0, 4);
+	Sobel(imageGuussian, imageY16S, CV_16S, 0, 1, 3, 1, 0, 4);
+	convertScaleAbs(imageX16S, imageSobelX, 1, 0);
+	convertScaleAbs(imageY16S, imageSobelY, 1, 0);
+	imageSobelOut = imageSobelX + imageSobelY;
+	imshow("XY·½ÏòÌİ¶ÈºÍ", imageSobelOut);
+
+
+	Mat srcImg = imageSobelOut;
+	//¿í¸ßÀ©³ä£¬·Ç±ØĞë£¬ÌØ¶¨µÄ¿í¸ß¿ÉÒÔÌá¸ß¸µÀïÒ¶ÔËËãĞ§ÂÊ  
+	Mat padded;
+	int opWidth = getOptimalDFTSize(srcImg.rows);
+	int opHeight = getOptimalDFTSize(srcImg.cols);
+	copyMakeBorder(srcImg, padded, 0, opWidth - srcImg.rows, 0, opHeight - srcImg.cols, BORDER_CONSTANT, Scalar::all(0));//À©³äsrcµÄ±ßÔµ£¬½«Í¼Ïñ±ä´ó
+	imshow("padded", padded);
+
+	Mat planes[] = { Mat_<float>(padded), Mat::zeros(padded.size(), CV_32F) };
+	Mat comImg;
+	//Í¨µÀÈÚºÏ£¬ÈÚºÏ³ÉÒ»¸ö2Í¨µÀµÄÍ¼Ïñ  
+	merge(planes, 2, comImg);
+	dft(comImg, comImg);
+	split(comImg, planes);
+	magnitude(planes[0], planes[1], planes[0]);
+	Mat magMat = planes[0];
+	magMat += Scalar::all(1);
+	log(magMat, magMat);     //¶ÔÊı±ä»»£¬·½±ãÏÔÊ¾ 
+	magMat = magMat(Rect(0, 0, magMat.cols & -2, magMat.rows & -2));
+	//ÒÔÏÂ°Ñ¸µÀïÒ¶ÆµÆ×Í¼µÄËÄ¸ö½ÇÂäÒÆ¶¯µ½Í¼ÏñÖĞĞÄ
+	int cx = magMat.cols / 2;
+	int cy = magMat.rows / 2;
+	Mat q0(magMat, Rect(0, 0, cx, cy));
+	Mat q1(magMat, Rect(0, cy, cx, cy));
+	Mat q2(magMat, Rect(cx, cy, cx, cy));
+	Mat q3(magMat, Rect(cx, 0, cx, cy));
+	Mat tmp;
+	q0.copyTo(tmp);
+	q2.copyTo(q0);
+	tmp.copyTo(q2);
+	q1.copyTo(tmp);
+	q3.copyTo(q1);
+	tmp.copyTo(q3);
+	normalize(magMat, magMat, 0, 1, CV_MINMAX);
+	Mat magImg(magMat.size(), CV_8UC1);
+	magMat.convertTo(magImg, CV_8UC1, 255, 0);
+	imshow("¸µÀïÒ¶ÆµÆ×", magImg);
+	//HoughLines²éÕÒ¸µÀïÒ¶ÆµÆ×µÄÖ±Ïß£¬¸ÃÖ±Ïß¸úÔ­Í¼µÄÒ»Î¬Âë·½ÏòÏà»¥´¹Ö±
+	threshold(magImg, magImg, 180, 255, CV_THRESH_BINARY);
+	imshow("¶şÖµ»¯", magImg);
+	vector<Vec2f> lines;
+	float pi180 = (float)CV_PI / 180;
+	Mat linImg(magImg.size(), CV_8UC3);
+	HoughLines(magImg, lines, 1, pi180, 100, 0, 0);
+	int numLines = lines.size();
+	float theta;
+	for (int l = 0; l<numLines; l++)
 	{
+		float rho = lines[l][0];
+		theta = lines[l][1];
+		float aa = (theta / CV_PI) * 180;
+		Point pt1, pt2;
+		double a = cos(theta), b = sin(theta);
+		double x0 = a*rho, y0 = b*rho;
+		pt1.x = cvRound(x0 + 1000 * (-b));
+		pt1.y = cvRound(y0 + 1000 * (a));
+		pt2.x = cvRound(x0 - 1000 * (-b));
+		pt2.y = cvRound(y0 - 1000 * (a));
+		line(linImg, pt1, pt2, Scalar(255, 0, 0), 3, 8, 0);
+	}
+	imshow("HoughÖ±Ïß", linImg);
+	//Ğ£Õı½Ç¶È¼ÆËã
+	//float angelD = 180 * theta / CV_PI - 90;
+	float angelD = 0;
+	Point center(image.cols / 2, image.rows / 2);
+	Mat rotMat = getRotationMatrix2D(center, angelD, 1.0);
+	Mat imageSource = Mat::ones(image.size(), CV_8UC3);
+	warpAffine(image, imageSource, rotMat, image.size(), 1, 0, Scalar(255, 255, 255));//·ÂÉä±ä»»Ğ£ÕıÍ¼Ïñ  
+	imshow("½Ç¶ÈĞ£Õı", imageSource);
+
+	//ZbarÒ»Î¬ÂëÊ¶±ğ
+	ImageScanner scanner;
+	scanner.set_config(ZBAR_NONE, ZBAR_CFG_ENABLE, 1);
+	int width1 = imageSource.cols;
+	int height1 = imageSource.rows;
+	uchar *raw = (uchar *)imageSource.data;
+	Image imageZbar(width1, height1, "Y800", raw, width1 * height1);
+
+	//É¨ÃèÌõÂë  
+	scanner.scan(imageZbar);
+
+	//2¸öÂë
+	string str_barcode_chip;//CHIP IDÂë
+	string str_barcode_sn;//SNÂë
+
+	Image::SymbolIterator symbol = imageZbar.symbol_begin();
+	if (imageZbar.symbol_begin() == imageZbar.symbol_end())
+	{
+		MessageBox(NULL, TEXT("Ê¶±ğÊ§°Ü"), TEXT("ÌõÂë½á¹û"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
+		//imwrite(img_shibai, camera);
+		imwrite(img_shibai, imageGray);
 		return -1;
 	}
-	//è¯»å–ä¸€å¸§å›¾åƒ
-	capture.read(camera);
-	imshow("sss", camera);
-	
-	string time = get_time();
-	char image_loca[100];
-	sprintf_s(image_loca, "%s%s%s", "F:\\æµ‹è¯•æ¡ç ç”¨\\", time.c_str(), ".jpg");
-	imwrite(image_loca, camera);
-	
-	//Mat srcimage = imread("F:\\3d.jpg");
-	//imshow("åŸå›¾", srcimage);
-	//Mat image;
-	//image = getGray(srcimage, true);//è·å–ç°åº¦å›¾
-	//image = getGass(image, true);//é«˜æ–¯å¹³æ»‘æ»¤æ³¢
-	//image = getSobel(image, true);//Sobel xâ€”yæ¢¯åº¦å·®
-	//image = getBlur(image, true);//å‡å€¼æ»¤æ³¢é™¤é«˜é¢‘å™ªå£°
-	//image = getThold(image, true);//äºŒå€¼åŒ–
-	//image = getBys(image, true);//é—­è¿ç®—
-	//image = getErode(image, true);//è…èš€
-	//image = getDilate(image, true);//è†¨èƒ€
+	else
+	{
+		str_barcode_chip = symbol->get_data();
 
-	//image = getRect(image, srcimage, true);//è·å–ROI
-	//imshow("å¤„ç†ç»“æœå›¾", image);
-	Dis_code(camera);
+		++symbol;
+
+		str_barcode_sn = symbol->get_data();
+	}
+
+	CString chip,sn;
+	chip = str_barcode_chip.c_str();
+	sn = str_barcode_sn.c_str();
+
+	MessageBox(NULL, TEXT("SN:") + sn + TEXT("\nCHIP ID:") + chip, TEXT("ÌõÂë½á¹û"), MB_DEFBUTTON1 | MB_DEFBUTTON2);
+	//imwrite(img_chenggong, camera);
+	imwrite(img_chenggong, imageGray);
+
+	//µÃµ½µÄCHIP IDÂëºÍSNÂë±£´æµ½csvÎÄ¼şÖĞ
+	// Ğ´ÎÄ¼ş  
+	char barcode_file[100];
+	sprintf_s(barcode_file, "%s%s%s", "F:\\ÌõÂë±£´æ\\barcode", time.c_str(), ".csv");
+	ofstream outFile;
+	outFile.open(barcode_file, ios::out); 
+
+
+	outFile << "chip:" << str_barcode_chip << "," << "sn:"<< str_barcode_sn << endl;
+	outFile.close();
+
+	// ¶ÁÎÄ¼ş  
+	ifstream inFile(barcode_file, ios::in);
 
 	waitKey();
 
-	return -1;
+	//capture.release();
 }
+
