@@ -1,17 +1,14 @@
-#include "stdafx.h"
-#include "recognition_of_barcode.h"
+#pragma comment(lib,"zbra64\\ZBar\\lib\\libzbar64-0.lib")
 
-#pragma comment(lib,"E:\\zbra64\\ZBar\\lib\\libzbar64-0.lib")
-
-#include "E:\opencv\opencv\build\include\opencv2\opencv.hpp"
-#include "E:\opencv\opencv\build\include\opencv2\core\core.hpp"
-#include "E:\opencv\opencv\build\include\opencv2\highgui\highgui.hpp"
-#include "E:\opencv\opencv\build\include\opencv2\imgproc\imgproc.hpp"
-#include "E:\opencv\opencv\build\include\opencv2\imgproc\imgproc_c.h"
+#include "opencv\opencv\build\include\opencv2\opencv.hpp"
+#include "opencv\opencv\build\include\opencv2\core\core.hpp"
+#include "opencv\opencv\build\include\opencv2\highgui\highgui.hpp"
+#include "opencv\opencv\build\include\opencv2\imgproc\imgproc.hpp"
+#include "opencv\opencv\build\include\opencv2\imgproc\imgproc_c.h"
 
 #include <atlstr.h>
 
-#include "E:\zbra64\ZBar\include\zbar.h"
+#include "zbra64\ZBar\include\zbar.h"
 #include <iostream>
 #include <fstream>
 
@@ -35,146 +32,6 @@ string get_time()
 	sprintf_s(szResult, 30, "%d-%d-%d-%d-%d-%d-%d", lt.wYear, lt.wMonth, lt.wDay, lt.wHour, lt.wMinute, lt.wSecond, lt.wMilliseconds);
 
 	return szResult;
-}
-
-
-//灰度处理
-Mat getGray(Mat image, bool show) 
-{
-	Mat cimage;
-	cvtColor(image, cimage, CV_RGBA2GRAY);
-	if (show)
-		imshow("灰度图", cimage);
-	return cimage;
-}
-
-//高斯滤波处理
-Mat getGass(Mat image, bool show) {
-	Mat cimage;
-	GaussianBlur(image, cimage, Size(3, 3), 0);
-	if (show)
-	imshow("高斯滤波图", cimage);
-	return cimage;
-}
-
-//sobel x-y差处理
-Mat getSobel(Mat image, bool show) 
-{
-	Mat cimageX16s, cimageY16s, imageSobelX, imageSobelY, out;
-	Sobel(image, cimageX16s, CV_16S, 1, 0, 3, 1, 0, 4);
-	Sobel(image, cimageY16s, CV_16S, 0, 1, 3, 1, 0, 4);
-	convertScaleAbs(cimageX16s, imageSobelX, 1, 0);
-	convertScaleAbs(cimageY16s, imageSobelY, 1, 0);
-	out = imageSobelX - imageSobelY;
-	if (show)
-	    imshow("Sobelx-y差 图", out);
-	return out;
-			
-}
-
-//均值滤波处理
-Mat getBlur(Mat image, bool show) 
-{
-	Mat cimage;
-	blur(image, cimage, Size(3, 3));
-	if (show)
-	    imshow("均值滤波图", cimage);
-	return cimage;		
-}
-
-//二值化处理
-Mat getThold(Mat image, bool show) 
-{
-	Mat cimage;
-	threshold(image, cimage, 112, 255, CV_THRESH_BINARY);
-	if (show)
-	imshow("二值化图", cimage);
-	return cimage;
-}
-
-//闭运算处理
-Mat getBys(Mat image, bool show)
-{
-	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
-	morphologyEx(image, image, MORPH_CLOSE, element);
-	if (show)
-	imshow("闭运算图", image);
-	return image;
-}
-
-//腐蚀
-Mat getErode(Mat image, bool show) 
-{
-	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
-	erode(image, image, element);
-	if (show)
-	imshow("腐蚀图", image);
-	return image;
-}
-
-//膨胀
-Mat getDilate(Mat image, bool show) 
-{
-	Mat element = getStructuringElement(MORPH_RECT, Size(15, 15));
-	for (int i = 0; i < 3; i++)
-	dilate(image, image, element);
-	if (show)
-	imshow("膨胀图", image);
-	return image;
-}
-
-//获取ROI
-Mat getRect(Mat image, Mat simage, bool show) 
-{
-	vector<vector<Point>> contours;
-	vector<Vec4i> hiera;
-	//Mat cimage;
-	findContours(image, contours, hiera, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_NONE);
-	vector<float>contourArea;
-	for (int i = 0; i < contours.size(); i++)
-	{
-	    contourArea.push_back(cv::contourArea(contours[i]));
-	}
-	 //找出面积最大的轮廓
-	double maxValue; Point maxLoc;
-	minMaxLoc(contourArea, NULL, &maxValue, NULL, &maxLoc);
-	//计算面积最大的轮廓的最小的外包矩形
-	 RotatedRect minRect = minAreaRect(contours[maxLoc.x]);
-	//为了防止找错,要检查这个矩形的偏斜角度不能超标
-	//如果超标,那就是没找到
-	 Rect myRect;
-	if (minRect.angle<2.0)
-	{
-	    //找到了矩形的角度,但是这是一个旋转矩形,所以还要重新获得一个外包最小矩形
-	        myRect = boundingRect(contours[maxLoc.x]);
-	    //把这个矩形在源图像中画出来
-	        rectangle(image,myRect,Scalar(0,255,255),3,LINE_AA);
-	        //看看显示效果,找的对不对
-	        //imshow("rect", image);
-	        //将扫描的图像裁剪下来,并保存为相应的结果,保留一些X方向的边界,所以对rect进行一定的扩张
-	        myRect.x = myRect.x - (myRect.width / 20);
-	    myRect.width = myRect.width*1.1;
-	    Mat resultImage = Mat(image, myRect);
-		//imshow("rect_result", resultImage);
-	 }
-	
-	 for (int i = 0; i<contours.size(); i++)
-	 {
-	     Rect rect = boundingRect((Mat)contours[i]);
-	     //cimage = simage(rect);
-	         rectangle(simage, rect, Scalar(0), 2);
-		if (show)
-				 ;
-	         //imshow("转变图", simage);
-	 }
-
-	 //裁剪转变图
-	 myRect.x = myRect.x - (myRect.width / 20);
-	 myRect.width = myRect.width*1.1;
-	 simage = Mat(simage, myRect);
-	 imshow("result", simage);
-
-	 return simage;
 }
 
 
